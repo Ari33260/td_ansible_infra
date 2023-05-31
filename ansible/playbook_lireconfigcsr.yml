@@ -41,7 +41,7 @@
       ios_command:
         commands:
           - enable
-          - cisco123!
+          - cisco!123
       register: output_post_auth
 
 - name: Config int réseau
@@ -65,14 +65,14 @@
       # On indique le nom du module
       cisco.ios.ios_config:
         lines:
-          - interface gi0/1/0
+          - interface gi0/0/0
           - description "Reseau IUT"
-          #- ip address dhcp
+          - ip address dhcp
           - no shutdown
         parents: interface {{ interface_gigabit_1 }}
       register: interface_gigabit_1_result
 
-    - name: Configuration de l'interface {{ interface_gigabit_2 }} en DHCP
+    - name: Configuration de l'interface {{ interface_gigabit_2 }}
       # On indique le nom du module
       cisco.ios.ios_config:
         lines:
@@ -86,7 +86,7 @@
         parents: interface {{ interface_gigabit_2 }}
       register: interface_gigabit_2_result
     
-    - name: Configuration de l'interface {{ interface_gigabit_3 }} en DHCP
+    - name: Configuration de l'interface {{ interface_gigabit_3 }}
       # On indique le nom du module
       cisco.ios.ios_config:
         lines:
@@ -123,6 +123,35 @@
         - "{{ interface_gigabit_3_result }}"
         - "{{ interface_gigabit_4_result }}"
 
+- name: Config des DHCP
+  hosts: c1111
+  # Passe l'étape permettant de récupérer des informations sur
+  #   l'hôte pour gagner du temps
+  gather_facts: false
+  vars:
+  - name_dhcp_entreprise: "lan_entreprise"
+  - GSSN_entreprise: "192.168.2.0"
+  - MSR_entreprise: "255.255.255.0"
+  - Gateway_entreprise: "192.168.2.1"
+
+
+  # Liste des tâches associées à notre Acte
+  tasks:
+    - name: Configuration du DHCP {{ name_dhcp_entreprise }}
+      # On indique le nom du module
+      cisco.ios.ios_config:
+        lines:
+        - ip dhcp pool {{ name_dhcp_entreprise }}
+        - network {{ GSSN_entreprise }} {{ MSR_entreprise }} 
+        - default-router {{ Gateway_entreprise }}
+        - exit
+      register: dhcp_result
+
+    - name: Affichage des résultats de la configuration DHCP
+      debug:
+        var: item
+      loop:
+        - "{{ dhcp_result }}"
 
 #- name: Serveur DHCP
 #  hosts: c1111
