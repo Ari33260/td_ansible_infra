@@ -1,0 +1,31 @@
+---
+- name: Mise en place du site-web
+  hosts: debian_apache
+  become: true
+  gather_facts: false
+
+  # Liste des tâches associées à notre Acte
+  tasks:
+    - name: Copie du site-web...
+      ansible.builtin.copy:
+        src: site_web/index.html
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0600'
+       # remote_src: true
+      register: copy_web_result
+
+    - name: Redemarrage du service apache2
+      ansible.builtin.systemd:
+        name: apache2.service
+        state: restarted
+      register: restart_apache_result
+
+
+    - name: Affichage des résultats
+      debug:
+        var: item
+      loop:
+        - "{{ copy_web_result }}"
+        - "{{ restart_apache_result }}"

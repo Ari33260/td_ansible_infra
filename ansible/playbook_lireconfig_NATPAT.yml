@@ -1,0 +1,75 @@
+---
+- name: Config NAT/PAT + Redirection de ports
+  hosts: c1111
+  # Passe l'étape permettant de récupérer des informations sur
+  #   l'hôte pour gagner du temps
+  gather_facts: false
+  vars:
+    serveur_debian: "10.0.0.4"
+    http_wan: "80"
+    http_lan: "80"
+    ssh_wan: "2222"
+    ssh_lan: "22"
+    ip_router_admin: "192.168.3.1"
+    interface_gigabit_1: "gi0/0/0"
+    interface_gigabit_2: "gi0/0/1"
+    vlan_1: "vlan 10"
+    vlan_2: "vlan 20"
+    vlan_3: "vlan 40"
+    network_1: "192.168.2.0"
+    network_2: "192.168.3.0"
+    network_3: "192.168.4.0"
+    network_4: "10.0.0.0"
+    MSRI_24: "0.0.0.255"
+
+  tasks:
+    - name: Configuration des interfaces en mode NAT
+      cisco.ios.ios_config:
+        lines:
+          - interface {{ interface_gigabit_1 }}
+          - "ip nat outside"
+          - interface {{ interface_gigabit_2 }}
+          - "ip nat inside"
+      register: interface_nat_result
+    - name: Configuration des interfaces VLANs en mode NAT
+      cisco.ios.ios_config:
+        lines:
+          - interface {{ item  }}
+          - "ip nat inside"
+      loop:
+        - "{{ vlan_1 }}"
+        - "{{ vlan_2 }}"
+        - "{{ vlan_3 }}"
+    - name: Configuration des ACLs NAT
+      cisco.ios.ios_config:
+        lines:
+          - access-list 1 permit {{ item }} {{ MSRI_24 }} 
+          - exit
+      loop:
+        - "{{ network_1 }}"
+        - "{{ network_2 }}"
+        - "{{ network_3 }}"
+        - "{{ network_4 }}"   
+      register: acl_nat_result
+    - name: Activation du PAT
+      cisco.ios.ios_config:
+        lines:
+          - ip nat inside source list 1 int {{ interface_gigabit_1 }} overload
+          - exit
+      register: activate_nat_result
+    - name: Redirections de ports
+      cisco.ios.ios_config:
+        lines:
+          - ip nat inside source static tcp {{ serveur_debian }} {{ http_lan }} interface {{ interface_gigabit_1 }} {{ http_wan }}
+          - ip nat inside source static tcp {{ ip_router_admin }} {{ ssh_lan }} interface {{ interface_gigabit_1 }} {{ ssh_wan }}
+          - exit
+      register: redirection_port_pat_result
+    - name: Affichage des résultats
+      debug:
+        var: item
+      loop:
+        - "{{ interface_nat_result }}"
+        - "{{ acl_nat_result }}"
+        - "{{ activate_nat_result }}"
+        - "{{ redirection_port_pat_result }}"
+

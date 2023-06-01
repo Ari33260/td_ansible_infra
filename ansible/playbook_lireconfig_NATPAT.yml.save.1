@@ -1,0 +1,130 @@
+---
+- name: Config NAT/PAT + Redirection de ports
+  hosts: c1111
+  # Passe l'étape permettant de récupérer des informations sur
+  #   l'hôte pour gagner du temps
+  gather_facts: false
+  vars:
+    interface_gigabit_1: "gi0/0/0"
+    interface_gigabit_2: "gi0/0/1"
+    vlan_1: "vlan 10"
+    vlan_2: "vlan 20"
+    vlan_3: "vlan 40"
+    network_1: "192.168.2.0"
+
+
+  # Liste des tâches associées à notre Acte
+  tasks:
+    - name: Configuration de l'interface {{ interface_gigabit_1 }} en DHCP
+      # On indique le nom du module
+      cisco.ios.ios_config:
+        lines:
+          - interface gi0/0/0
+          - description "Reseau IUT"
+          - ip address dhcp
+          - no shutdown
+        parents: interface {{ interface_gigabit_1 }}
+      register: interface_gigabit_1_result
+
+    - name: Configuration de l'interface {{ interface_gigabit_2 }}
+      # On indique le nom du module
+      cisco.ios.ios_config:
+        lines:
+          - interface {{ vlan_1 }}
+          - ip address 192.168.2.1 255.255.255.0
+          - interface {{ interface_gigabit_2 }}
+          - description "LAN_ENTREPRISE"
+          - switchport mode access
+          - switchport access {{ vlan_1 }}
+          - no shutdown
+        parents: interface {{ interface_gigabit_2 }}
+      register: interface_gigabit_2_result
+    
+    - name: Configuration de l'interface {{ interface_gigabit_3 }}
+      # On indique le nom du module
+      cisco.ios.ios_config:
+        lines:
+          - interface {{ vlan_2 }}
+          - ip address 192.168.3.1 255.255.255.0
+          - interface {{ interface_gigabit_3 }}
+          - description "LAN_DMZ"
+          - switchport mode access
+          - switchport access {{ vlan_2 }}
+          - no shutdown
+        parents: interface {{ interface_gigabit_3 }}
+      register: interface_gigabit_3_result
+
+    - name: Configuration de l'interface {{ interface_gigabit_4 }} en DHCP
+      # On indique le nom du module
+      cisco.ios.ios_config:
+        lines:
+          - interface {{ vlan_3 }}
+          - ip address 192.168.4.1 255.255.255.0
+          - interface {{ interface_gigabit_4 }}
+          - description "LAN_ADMIN"
+          - switchport mode access
+          - switchport access {{ vlan_3 }}
+          - no shutdown
+        parents: interface {{ interface_gigabit_4 }}
+      register: interface_gigabit_4_result
+
+    - name: Affichage des résultats de la configuration
+      debug:
+        var: item
+      loop:
+        - "{{ interface_gigabit_1_result }}"
+        - "{{ interface_gigabit_2_result }}"
+        - "{{ interface_gigabit_3_result }}"
+        - "{{ interface_gigabit_4_result }}"
+
+- name: Config des DHCP
+  hosts: c1111
+  # Passe l'étape permettant de récupérer des informations sur
+  #   l'hôte pour gagner du temps
+  gather_facts: false
+  vars:
+  - name_dhcp_entreprise: "lan_entreprise"
+  - GSSN_entreprise: "192.168.2.0"
+  - MSR_entreprise: "255.255.255.0"
+  - Gateway_entreprise: "192.168.2.1"
+
+
+  # Liste des tâches associées à notre Acte
+  tasks:
+    - name: Configuration du DHCP {{ name_dhcp_entreprise }}
+      # On indique le nom du module
+      cisco.ios.ios_config:
+        lines:
+        - ip dhcp pool {{ name_dhcp_entreprise }}
+        - network {{ GSSN_entreprise }} {{ MSR_entreprise }} 
+        - default-router {{ Gateway_entreprise }}
+        - exit
+      register: dhcp_result
+
+    - name: Affichage des résultats de la configuration DHCP
+      debug:
+        var: item
+      loop:
+        - "{{ dhcp_result }}"
+
+#- name: Serveur DHCP
+#  hosts: c1111
+#  gather_facts: false
+#  vars:
+#    network_1: "192.168.2.0 255.255.255.0"
+#    network_2: "192.168.3.0 255.255.255.0"
+#    network_3: "192.168.4.0 255.255.255.0"
+#    gateway_1: "192.168.2.1"
+#    gateway_2: "192.168.3.1"
+#    gateway_3: "192.168.4.1"
+
+
+
+#    - name: Enregistre la configuration
+      # Module pour copier des fichiers
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+ #     copy:
+        # Source : ce que l'on a récupéré dans config
+  #      content: " {{ config.stdout[0] }}"
+        # Nom du fichier, le terme entre accolade est une variable
+   #     dest: "show_run_{{ inventory_hostname }}.txt"

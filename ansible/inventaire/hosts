@@ -1,5 +1,6 @@
-[debian_bbo]
-debian_bbo  ansible_host=10.0.0.3 
+[servers]
+debian_bbo  ansible_host=10.0.0.3
+debian_apache	ansible_host=10.0.0.4
 
 [routeurs]
 c1111 ansible_host=10.0.0.1

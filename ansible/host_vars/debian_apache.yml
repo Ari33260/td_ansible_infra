@@ -1,0 +1,12 @@
+---
+
+#Debian_Apache
+ansible_user : utilisateur
+ansible_password : toor
+ansible_become: yes
+ansible_become_user : root
+ansible_become_method: su
+ansible_become_password: toor
+
+#ansible_connection : network_cli
+#ansible_network_os : linux

@@ -1,0 +1,29 @@
+---
+- name: Installations des paquets
+  hosts: debian_apache
+  gather_facts: false
+
+  # Liste des tâches associées à notre Acte
+  tasks:
+#    - name: Mise à jour des paquets (update)
+#      ansible.builtin.apt:
+#        update_cache: yes
+#      register: apt_update_result
+
+#    - name: Mise à jour des paquets (upgrade)
+#      ansible.builtin.apt:
+#        upgrade: dist
+#      register: apt_upgrade_result
+
+    - name: Installation de Apache
+      ansible.builtin.apt:
+        name: apache2=2.4.56-1~deb11u2
+      register: apt_apache_result
+
+    - name: Affichage des résultats
+      debug:
+        var: item
+      loop:
+  #      - "{{ apt_update_result }}"
+  #      - "{{ apt_upgrade_result }}"
+        - "{{ apt_apache_result }}"
